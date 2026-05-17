@@ -10,10 +10,11 @@ jobs:
 
     strategy:
       matrix:
-        julia-version: ['1.10']
+        julia-version: ['1.12']
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Julia
         uses: julia-actions/setup-julia@v1
@@ -26,7 +27,7 @@ jobs:
           path: ~/.julia/artifacts
           key: ${{ runner.os }}-julia-${{ hashFiles('**/Project.toml') }}
 
-      - name: Install dependencies
+      - name: Instantiate environment
         run: julia --project -e 'using Pkg; Pkg.instantiate()'
 
       - name: Run tests
