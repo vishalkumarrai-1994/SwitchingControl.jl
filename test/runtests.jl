@@ -1,7 +1,3 @@
-using Pkg
-Pkg.activate(joinpath(@__DIR__, ".."))
-Pkg.instantiate()
-
 using Test
 using LinearAlgebra
 using SwitchingControl
