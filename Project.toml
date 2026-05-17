@@ -1,0 +1,20 @@
+name = "SwitchingControl"
+uuid = "fcabb1d5-d7f9-46f6-908e-cdac43c56d12"
+version = "0.1.0"
+authors = ["Vishal Kumar Rai"]
+
+[deps]
+BoundaryValueDiffEq = "764a87c0-6b3e-53db-9096-fe964310641d"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
+NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+
+[compat]
+BoundaryValueDiffEq = "5.23"
+CairoMakie = "0.15"
+DifferentialEquations = "8"
+FiniteDiff = "2"
+NonlinearSolve = "4"
+SciMLBase = "3"
