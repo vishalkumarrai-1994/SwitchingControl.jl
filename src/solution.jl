@@ -7,7 +7,9 @@ using ..Types
 # ============================================================
 # WRAPPER
 # ============================================================
-
+"""
+User-facing wrapper returned by `solve`.
+"""
 struct SwitchingSolutionView{S}
     sol::S
 end

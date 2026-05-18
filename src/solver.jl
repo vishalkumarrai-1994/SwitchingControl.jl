@@ -9,7 +9,11 @@ using .Solution
 # ============================================================
 # PUBLIC DISPATCHER
 # ============================================================
+"""
+Solve a switching dynamical system.
 
+Supports IVP-based endogenous switching and experimental shooting methods.
+"""
 function solve(prob::SwitchingProblem; mode::Symbol = :ivp, kwargs...)
 
     if mode == :ivp
