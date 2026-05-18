@@ -1,8 +1,11 @@
 # SwitchingControl.jl
 
+![CI](https://github.com/vishalkumarrai-1994/SwitchingControl.jl/actions/workflows/ci.yml/badge.svg)
+
+
 A Julia package for solving dynamic systems with endogenous regime switching using ODE-based methods.
 
-`SwitchingControl.jl` is designed for optimal control, economics, engineering, and dynamic systems applications where state trajectories evolve under one regime until a switching condition is triggered, after which the system transitions to a different regime.
+`SwitchingControl.jl` is designed for optimal control, economics, engineering, and hybrid dynamical systems where trajectories evolve under one regime until a switching condition is triggered, after which the system transitions to a different regime.
 
 The package provides:
 
@@ -233,6 +236,18 @@ Current shooting support is experimental and works best for smooth, well-conditi
 
 ---
 
+# Limitations
+
+Current limitations of the package:
+
+- Only a single endogenous switching event is supported per solve
+- Shooting-based methods are currently experimental
+- Multiple-regime sequencing is not yet implemented
+- Primarily designed for IVP switching problems
+- PDE and HJB functionality are planned but not yet available
+
+---
+
 # Package Structure
 
 ```text
@@ -257,6 +272,8 @@ SwitchingControl.jl/
 ---
 
 # Running Tests
+
+From the Julia REPL:
 
 ```julia
 using Pkg
@@ -283,6 +300,7 @@ include("examples/basic_switching.jl")
 - DifferentialEquations.jl
 - SciMLBase.jl
 - NonlinearSolve.jl
+- BoundaryValueDiffEq.jl
 
 ---
 
@@ -290,7 +308,7 @@ include("examples/basic_switching.jl")
 
 - Multiple switching events
 - Hybrid system support
-- HJB interfaces
+- Additional optimal control interfaces
 - Economic control templates
 - PDE-based extensions
 - Visualization utilities
