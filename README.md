@@ -53,10 +53,7 @@ using SwitchingControl
 # PARAMETERS
 # ============================================================
 
-p = (
-    r = 0.03,
-    c = 2.0
-)
+p = nothing
 
 # ============================================================
 # PRE-SWITCH DYNAMICS
@@ -67,8 +64,8 @@ function dynamics_before!(du, u, p, t)
     x = u[1]
     A = u[2]
 
-    du[1] = -0.1 * x
-    du[2] = p.r * A - p.c
+    du[1] = 0.2 * x
+    du[2] = 1.0
 
     return nothing
 end
@@ -82,8 +79,8 @@ function dynamics_after!(du, u, p, t)
     x = u[1]
     A = u[2]
 
-    du[1] = -0.5 * x
-    du[2] = p.r * A - 0.5 * p.c
+    du[1] = -0.3 * x
+    du[2] = -0.5
 
     return nothing
 end
@@ -96,7 +93,7 @@ function switching_condition(u, p, t)
 
     A = u[2]
 
-    return A - 10.0
+    return A - 5.0
 end
 
 # ============================================================
