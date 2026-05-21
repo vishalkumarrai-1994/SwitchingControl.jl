@@ -23,7 +23,7 @@ The package provides:
 - Endogenous switching using user-defined conditions
 - Separate dynamics before and after switching
 - Continuous event detection
-- Type-stable trajectory storage
+- Type-stable solution containers
 - DifferentialEquations.jl integration
 - Simple and extensible API
 - Built on the SciML ecosystem
@@ -32,15 +32,15 @@ The package provides:
 
 # Installation
 
-## Development Version
+# Installation
 
 ```julia
 using Pkg
-
-Pkg.add(url = "https://github.com/vishalkumarrai-1994/SwitchingControl.jl")
+Pkg.add("SwitchingControl")
 ```
 
----
+`SwitchingControl.jl` is available through the Julia General Registry.
+----
 
 # Quick Start
 
