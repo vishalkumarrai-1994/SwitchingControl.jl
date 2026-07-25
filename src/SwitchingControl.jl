@@ -16,5 +16,6 @@ export SwitchingProblem,
        SwitchingSolutionView,
        BoundaryConditions,
        solve
+export Leg
 
 end
