@@ -26,9 +26,22 @@ function solve(prob::SwitchingProblem; mode::Symbol = :ivp, kwargs...)
 
         return solve_shooting(prob, kwargs[:guess])
 
+    elseif mode == :free_boundary
+
+        @assert haskey(kwargs, :guess)     "free_boundary mode requires guess = ..."
+        @assert haskey(kwargs, :make_u0)   "free_boundary mode requires make_u0 = ..."
+        @assert haskey(kwargs, :residual!) "free_boundary mode requires residual! = ..."
+
+        return solve_free_boundary(
+            prob, kwargs[:guess];
+            make_u0 = kwargs[:make_u0],
+            residual! = kwargs[:residual!],
+            n_residuals = get(kwargs, :n_residuals, length(kwargs[:guess]))
+        )
+
     else
 
-        error("Unknown mode: $mode. Use :ivp or :shooting.")
+        error("Unknown mode: $mode. Use :ivp, :shooting, or :free_boundary.")
 
     end
 end
@@ -186,50 +199,57 @@ end
 
 
 # ============================================================
-# SHOOTING METHOD
+# GENERAL FREE-BOUNDARY / SHOOTING SOLVER
 # ============================================================
 
-function solve_shooting(prob::SwitchingProblem, guess)
+"""
+    solve_free_boundary(prob, guess; make_u0, residual!, n_residuals = length(guess))
 
-    bc = prob.boundary_conditions
+Solve for free parameters `θ` such that a user-supplied residual
+vanishes, where the residual is evaluated on the switching solution
+obtained by solving `prob`'s IVP dynamics with initial condition
+`make_u0(θ)`.
 
-    @assert bc.terminal !== nothing \
-        "Terminal condition required for shooting mode"
+This is deliberately more general than a classic two-point-BVP
+shooting method:
 
-    xT = collect(bc.terminal)
+- `make_u0(θ) -> u0` builds the initial state from the free
+  parameters. `θ` need not be raw state components — it can be
+  coefficients of a local series expansion near a singular point,
+  a subset of state entries, or anything else that determines `u0`.
 
-    x0_fixed = collect(bc.initial)
+- `residual!(F, sol, θ, p)` fills the residual vector `F` from the
+  full `SwitchingSolutionView` `sol`. This can reference the
+  terminal state (recovering classic BVP shooting), or the state
+  *at the switch itself* via `sol.sol.tau` and
+  `sol.sol.solution_before.u[end]` — which is what endogenous
+  free-boundary conditions such as value-matching / smooth-pasting
+  require. The old behaviour (match a fixed terminal state at a
+  fixed final time) is one instance of this; see `solve_shooting`
+  below.
+
+Returns the `NonlinearSolve` solution object; the converged
+parameters are in `.u`, and calling `make_u0` on `.u` reconstructs
+the boundary condition that solves the problem.
+"""
+function solve_free_boundary(prob::SwitchingProblem, guess;
+                              make_u0,
+                              residual!,
+                              n_residuals::Int = length(guess))
 
     guess = collect(guess)
 
-    n = length(xT)
+    function F!(F, θ, p)
 
-    # =========================================================
-    # RESIDUAL FUNCTION
-    # =========================================================
+        @assert θ !== nothing
 
-    function residual!(F, x_free, p)
+        T = eltype(θ)
 
-        @assert x_free !== nothing
-
-        T = eltype(x_free)
-
-        # ----------------------------------------------------
-        # RECONSTRUCT INITIAL STATE
-        # ----------------------------------------------------
-
-        x0 = T.(x0_fixed)
-
-        # assumes final entries are free variables
-        nf = length(x_free)
-
-        x0[end - nf + 1:end] .= x_free
-
-        xT_local = T.(xT)
+        u0 = T.(make_u0(θ))
 
         new_bc = BoundaryConditions(
-            x0,
-            xT_local
+            u0,
+            prob.boundary_conditions.terminal
         )
 
         new_prob = SwitchingProblem(
@@ -244,24 +264,15 @@ function solve_shooting(prob::SwitchingProblem, guess)
 
         sol = solve_ivp(new_prob)
 
-        x_end_full = terminal_state(sol)
-
-        # compare only model dimensions
-        x_end = x_end_full[1:n]
-
-        F .= x_end .- xT_local
+        residual!(F, sol, θ, prob.parameters)
 
         return nothing
     end
 
-    # =========================================================
-    # NONLINEAR PROBLEM
-    # =========================================================
-
-    F0 = zeros(eltype(guess), n)
+    F0 = zeros(eltype(guess), n_residuals)
 
     f = NonlinearFunction(
-        residual!;
+        F!;
         resid_prototype = F0
     )
 
@@ -274,5 +285,54 @@ function solve_shooting(prob::SwitchingProblem, guess)
     return NonlinearSolve.solve(
         prob_nl,
         NewtonRaphson(; autodiff = AutoFiniteDiff())
+    )
+end
+
+
+# ============================================================
+# CLASSIC TWO-POINT BVP SHOOTING (special case of the above)
+# ============================================================
+
+"""
+Shoots on the trailing components of the initial state to match a
+fixed terminal state at the problem's fixed final time. Kept for
+backward compatibility; new problems — especially endogenous
+free-boundary problems like smooth-pasting/value-matching — should
+generally use `solve_free_boundary` directly, since it also lets
+the residual be evaluated at the switching point rather than only
+at the terminal time.
+"""
+function solve_shooting(prob::SwitchingProblem, guess)
+
+    bc = prob.boundary_conditions
+
+    @assert bc.terminal !== nothing \
+        "Terminal condition required for shooting mode"
+
+    xT = collect(bc.terminal)
+    x0_fixed = collect(bc.initial)
+    n = length(xT)
+
+    make_u0 = θ -> begin
+        T = eltype(θ)
+        x0 = T.(x0_fixed)
+        nf = length(θ)
+        x0[end - nf + 1:end] .= θ
+        x0
+    end
+
+    residual! = (F, sol, θ, p) -> begin
+        T = eltype(θ)
+        x_end_full = terminal_state(sol)
+        x_end = x_end_full[1:n]
+        F .= x_end .- T.(xT)
+        return nothing
+    end
+
+    return solve_free_boundary(
+        prob, guess;
+        make_u0 = make_u0,
+        residual! = residual!,
+        n_residuals = n
     )
 end
