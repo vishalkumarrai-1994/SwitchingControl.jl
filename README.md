@@ -3,7 +3,7 @@
 ![CI](https://github.com/vishalkumarrai-1994/SwitchingControl.jl/actions/workflows/ci.yml/badge.svg)
 
 
-A Julia package for solving dynamic systems with endogenous regime switching using ODE-based methods.
+A Julia framework for solving dynamic optimization and switching-control problems through event-driven numerical integration.
 
 `SwitchingControl.jl` is designed for optimal control, economics, engineering, and hybrid dynamical systems where trajectories evolve under one regime until a switching condition is triggered, after which the system transitions to a different regime.
 
