@@ -1,21 +1,19 @@
 module SwitchingControl
 
-using DifferentialEquations
-using SciMLBase
-using NonlinearSolve
+using DifferentialEquations, SciMLBase, NonlinearSolve, Polynomials, LinearAlgebra
 
-include("types.jl")
-include("solution.jl")
+function solve end   # generic function — both solver files add methods
+
+include("types.jl");        using .Types
+include("MarkovTypes.jl");  using .MarkovTypes
+include("solution.jl");     using .Solution
 include("solver.jl")
+include("MarkovSolver.jl")
 
-using .Types
-using .Solution
-
-export SwitchingProblem,
-       SwitchingSolution,
-       SwitchingSolutionView,
-       BoundaryConditions,
-       solve
+export SwitchingProblem, SwitchingSolution, SwitchingSolutionView,
+       MarkovSwitchingProblem, MarkovSwitchingSolution, MarkovSwitchingSolutionView,
+       GBMRegime, GenericRegime, PutPayoff, GenericPayoff,
+       BoundaryConditions, AbstractSwitchingProblem, solve
 export Leg
 
 end

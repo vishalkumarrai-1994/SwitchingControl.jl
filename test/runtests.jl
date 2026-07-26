@@ -281,3 +281,22 @@ end
     @test abs(P_H_star - DX_P_H_closed) / DX_P_H_closed < 1e-8
     @test abs(P_L_star - DX_P_L_closed) / DX_P_L_closed < 1e-8
 end
+
+@testset "Guo & Zhang: σ1 sensitivity (Table 1)" begin
+    σ1_grid  = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
+    x1_exact = [0.646, 0.531, 0.441, 0.369, 0.312, 0.266]
+    x2_exact = [0.764, 0.683, 0.614, 0.554, 0.505, 0.462]
+
+    for (σ1, x1e, x2e) in zip(σ1_grid, x1_exact, x2_exact)
+        prob = MarkovSwitchingProblem(
+            [GBMRegime(3.0, σ1), GBMRegime(3.0, 5.0)],
+            [-100.0 100.0; 100.0 -100.0],
+            [PutPayoff(5.0), PutPayoff(5.0)],
+            3.0, (1e-3, 15.0), nothing, 2
+        )
+        sol = SwitchingControl.solve(prob; guess=[x1e*0.95, x2e*0.95])
+        @test sol.converged
+        @test isapprox(sol.boundaries[1], x1e; atol=0.015)
+        @test isapprox(sol.boundaries[2], x2e; atol=0.015)
+    end
+end

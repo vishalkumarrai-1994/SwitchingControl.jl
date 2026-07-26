@@ -1,6 +1,6 @@
 module Solution
 
-export SwitchingSolutionView
+export SwitchingSolutionView, MarkovSwitchingSolutionView
 
 using ..Types
 
@@ -56,6 +56,24 @@ function (s::SwitchingSolutionView)(t)
     else
         return sol.solution_after(t; idxs=1)
     end
+end
+
+
+# ============================================================
+# MARKOV VIEW — same shape, different underlying fields
+# ============================================================
+struct MarkovSwitchingSolutionView{S}
+    sol::S
+end
+
+boundaries(s::MarkovSwitchingSolutionView) = s.sol.boundaries
+converged(s::MarkovSwitchingSolutionView)  = s.sol.converged
+
+function Base.getproperty(s::MarkovSwitchingSolutionView, name::Symbol)
+    name === :boundaries && return boundaries(s)
+    name === :converged  && return converged(s)
+    name === :sol         && return getfield(s, :sol)
+    return getfield(s, name)
 end
 
 end
