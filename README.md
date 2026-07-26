@@ -7,6 +7,11 @@ A Julia framework for solving dynamic optimization and switching-control problem
 
 `SwitchingControl.jl` is designed for optimal control, economics, engineering, and hybrid dynamical systems where trajectories evolve under one regime until a switching condition is triggered, after which the system transitions to a different regime. Beyond fixed-boundary IVPs, the package also solves **endogenous free-boundary problems** — including problems requiring several independently-integrated legs glued together by value-matching / smooth-pasting conditions, such as real-options entry/exit models — entirely through its own `solve` interface.
 
+The package also solves **coupled regime-switching free-boundary problems** — where 
+multiple regimes exist simultaneously (rather than sequentially) and are linked through 
+a continuous-time Markov generator, such as regime-switching optimal stopping and 
+American-option pricing problems.
+
 The package provides:
 
 - Initial value problem (IVP) switching solvers
@@ -32,7 +37,8 @@ The package provides:
 - The full nonlinear solve — including algorithm selection — stays inside the package; no need to depend on `NonlinearSolve.jl` directly in your own code
 - Simple and extensible API
 - Built on the SciML ecosystem
-
+- Markov regime-switching free-boundary solver (`MarkovSwitchingProblem`), with an exact
+  closed-form path for 2-regime geometric Brownian motion problems
 ---
 
 # Installation
@@ -334,6 +340,50 @@ See `examples/dixit.jl` for the full, runnable version, validated against the cl
 
 ---
 
+# Markov Regime-Switching Problems
+
+Some free-boundary problems don't involve a single trajectory switching *through time* — 
+instead, several regimes exist *simultaneously*, coupled by a continuous-time Markov 
+generator, each with its own value function and its own endogenous free boundary. This 
+arises naturally in regime-switching optimal stopping and American-option pricing, where 
+the state process's drift/volatility depends on an unobserved or exogenous regime that 
+can jump at any time.
+
+`MarkovSwitchingProblem` solves this class directly through the same `solve()` interface, 
+dispatched by regime/payoff type:
+
+- `GBMRegime(μ, σ)` + `PutPayoff(K)` with `n_regimes == 2` routes to an **exact closed-form 
+  solver**, following Guo & Zhang (2004), *"Closed-Form Solutions for Perpetual American 
+  Put Options with Regime Switching,"* SIAM J. Appl. Math. 64(6).
+- `GenericRegime`/`GenericPayoff` or `n_regimes > 2` are intended for a general numeric 
+  coupled boundary-value solver (**in development** — see Limitations).
+
+Example — Guo & Zhang (2004) base case, a perpetual American put under 2-state 
+regime-switching volatility:
+
+```julia
+using SwitchingControl
+
+prob = MarkovSwitchingProblem(
+    [GBMRegime(3.0, 9.0), GBMRegime(3.0, 5.0)],   # (μ,σ) per regime
+    [-100.0 100.0; 100.0 -100.0],                  # Markov generator Q
+    [PutPayoff(5.0), PutPayoff(5.0)],               # strike K, per regime
+    3.0,                                             # discount rate r
+    (1e-3, 15.0),                                    # state domain
+    nothing, 2
+)
+
+sol = SwitchingControl.solve(prob)
+
+sol.boundaries   # [0.4405, 0.6116] — matches the paper's published (0.441, 0.614)
+sol.converged    # true
+```
+
+This is validated against the paper's published base case and its full σ₁/λ₁ sensitivity 
+tables (24 independent parameter points; see `test/runtests.jl`).
+
+---
+
 # Shooting Solver
 
 The package also contains infrastructure for shooting-based boundary value methods.
@@ -361,6 +411,11 @@ Current shooting support is experimental and works best for smooth, well-conditi
 | `:free_boundary`   | One IVP whose switching *threshold* is itself unknown (value-matching / smooth-pasting) |
 | `:multi_leg`       | Several independently-integrated legs (e.g. idle/active regimes) glued by a joint residual over shared free parameters |
 
+Note: `MarkovSwitchingProblem` doesn't use the `mode` keyword above — it's a distinct 
+problem type dispatched automatically by `solve()` based on regime/payoff type (see 
+Markov Regime-Switching Problems, above).
+
+
 ---
 
 # Limitations
@@ -372,6 +427,9 @@ Current limitations of the package:
 - `:multi_leg` covers problems expressible as several separately-integrated legs sharing free parameters; general arbitrary-length regime *sequencing* within one continuous trajectory (e.g. idle → active → idle → active, endogenously repeating) is not yet implemented
 - Primarily designed for IVP and free-boundary switching problems
 - PDE and HJB functionality are planned but not yet available
+- The Markov regime-switching solver's exact closed-form path currently supports only 
+  2-regime, GBM-driven, put-payoff problems; the general N-regime / non-GBM numeric 
+  solver is not yet implemented
 
 ---
 
@@ -383,8 +441,10 @@ SwitchingControl.jl/
 ├── src/
 │   ├── SwitchingControl.jl
 │   ├── Types.jl
+│   ├── MarkovTypes.jl
 │   ├── Solution.jl
-│   └── solver.jl
+│   ├── solver.jl
+│   └── MarkovSolver.jl
 │
 ├── test/
 │   └── runtests.jl
@@ -392,9 +452,11 @@ SwitchingControl.jl/
 ├── examples/
 │   ├── basic_switching.jl
 │   ├── mcdonald_siegel.jl
-│   └── dixit.jl
+│   ├── dixit.jl
+│   └── guo_zhang.jl
 │
 ├── Project.toml
+├── CHANGELOG.md
 └── README.md
 ```
 
@@ -420,6 +482,7 @@ From the Julia REPL:
 include("examples/basic_switching.jl")
 include("examples/mcdonald_siegel.jl")
 include("examples/dixit.jl")
+include("examples/guo_zhang.jl")
 ```
 
 ---
@@ -448,7 +511,7 @@ include("examples/dixit.jl")
 - Improved shooting methods
 - Automatic continuity enforcement
 - General regime sequence support
-
+- General N-regime, non-GBM numeric solver for Markov regime-switching problems
 ---
 
 # Applications
@@ -464,6 +527,8 @@ Potential use cases include:
 - Threshold control problems
 - State-triggered policy rules
 - Dynamic optimization
+- Regime-switching option pricing
+- Business-cycle-dependent optimal stopping
 
 ---
 
